@@ -9,113 +9,6 @@
  * Author URI: https://oktaryan.com
  */
 
-class WT_Wordpress {
-
-	/**
-	 * [_post_entries_default_args description]
-	 * @param  array  $args [description]
-	 * @return [type]       [description]
-	 */
-	function _post_entries_default_args( $args = array() ) {
-		$default_args = array(
-			'title',
-			'content',
-			'date'
-		);
-		if ( is_array( $args ) ) {
-			if ( empty ( $args ) ) {
-				$args = $default_args;
-			}
-			else {
-				$args = array_intersect( $args, $default_args );
-			}
-		} else {
-			$args = array( $args );
-		}
-		return $args;
-	}
-
-	/**
-	 * [decode_from_json description]
-	 * @param  [type] $source [description]
-	 * @return [type]         [description]
-	 */
-	public function decode_from_json( $source ) {
-
-		return json_decode( $source, true );
-
-	}
-
-	/**
-	 * [post_entries description]
-	 * @param  [type] $json [description]
-	 * @param  array  $args [description]
-	 * @return [type]       [description]
-	 */
-	public function post_entries( $json, $args = array() ) {
-
-		$args = $this->_post_entries_default_args( $args );
-
-		$json_decoded = $this->decode_from_json( $json );
-
-		$post_entries = array();
-
-		foreach ( $json_decoded as $a ) {
-			$x = array();
-			$x['id'] = ( isset( $a['id'] ) ) ? $a['id'] : '';
-			if ( in_array( 'title', $args ) ) {
-				$x['title'] = ( isset( $a['title']['rendered'] ) ) ? $a['title']['rendered'] : '';
-			}
-			if ( in_array( 'content', $args ) ) {
-				$x['content'] = ( isset( $a['content']['rendered'] ) ) ? $a['content']['rendered'] : '';
-			}
-			if ( in_array( 'date', $args ) ) {
-				$x['date'] = ( isset( $a['date'] ) ) ? $a['date'] : '';
-			}
-			$post_entries[] = $x;
-		}
-
-		return $post_entries;
-
-	}
-
-	/**
-	 * [html description]
-	 * @param  [type]  $json [description]
-	 * @param  array   $args [description]
-	 * @param  boolean $echo [description]
-	 * @return [type]        [description]
-	 */
-	public function html( $json, $args = array(), $echo = true ) {
-
-		$args = $this->_post_entries_default_args( $args );
-
-		$post_entries = $this->post_entries( $json );
-
-		if ( false == $echo ) {
-			ob_start();
-		}
-
-		foreach ( $post_entries as $a ) {
-			echo '<div>';
-			if ( in_array( 'title', $args ) ) {
-				echo '<p style="font-weight:600">(' . $a['id'] . ') ' . $a['title'] . '</p>';
-			}
-			if ( in_array( 'content', $args ) ) {
-				echo '<p>' .  $a['content']  . '</p>';
-			}
-			if ( in_array( 'date', $args ) ) {
-				echo '<p>' . $a['date'] . '</p>';
-			}
-			echo '</div>';
-		}
-
-		if ( false == $echo ) {
-			return ob_get_clean();
-		}
-	}
-}
-
 /**
  * 
  */
@@ -127,7 +20,9 @@ class WT_REST_API {
 	 */
 	function create() {
 
-		$url = "http://localhost/wordpress/wp-json/wp/v2/posts/";
+		$url = get_rest_url() . "wp/v2/posts/";
+
+		echo get_res_url();
 
 		$response = wp_remote_post( 
 			$url,
@@ -157,9 +52,15 @@ class WT_REST_API {
 
 	}
 
+	/**
+	 * [update description]
+	 * @param  [type] $post_id [description]
+	 * @param  [type] $data    [description]
+	 * @return [type]          [description]
+	 */
 	function update( $post_id, $data ) {
 
-		$url = "http://localhost/wordpress/wp-json/wp/v2/posts/{$post_id}";
+		$url = get_rest_url() . "wp/v2/posts/{$post_id}";
 
 		$response = wp_remote_post( 
 			$url,
@@ -192,7 +93,7 @@ class WT_REST_API {
 	 */
 	function delete( $post_id ) {
 
-		$url = "http://localhost/wordpress/wp-json/wp/v2/posts/{$post_id}";
+		$url = get_rest_url() . "wp/v2/posts/{$post_id}";
 
 		$response = wp_remote_post( 
 			$url,
@@ -218,24 +119,13 @@ class WT_REST_API {
 	}
 
 	/**
-	 * [backend description]
-	 * @return [type] [description]
-	 */
-	function backend() {
-
-		$response = wp_remote_get( site_url().'/wp-json/wp/v2/posts/?page=1&per_page=2', array( '' ) );
-		echo 'Response:<pre>';
-		var_dump($response);
-		echo '</pre>';
-
-	}
-
-	/**
 	 * [html_show_posts description]
 	 * @param  [type] $atts [description]
 	 * @return [type]       [description]
 	 */
 	public function html_show_posts( $atts ) {
+
+		//echo get_rest_url();
 
 		$attributes = shortcode_atts( 
 			array( 'posts' => 1 ),
@@ -247,10 +137,30 @@ class WT_REST_API {
 			$posts = $attributes['posts'];
 		}
 
-		$response = wp_remote_get( site_url()."/wp-json/wp/v2/posts/?page=1&per_page={$posts}", array( '' ) );
+		$response = wp_remote_get( get_rest_url()."wp/v2/posts/?page=1&per_page={$posts}", array( '' ) );
 
-		$wt = new WT_Wordpress;
-		$wt->html( wp_remote_retrieve_body( $response ) );
+		$source = wp_remote_retrieve_body( $response );
+
+		$json_decoded = json_decode( $source, true );
+
+		$post_entries = array();
+
+		foreach ( $json_decoded as $a ) {
+			$x = array();
+			$x['id'] = ( isset( $a['id'] ) ) ? $a['id'] : '';
+			$x['title'] = ( isset( $a['title']['rendered'] ) ) ? $a['title']['rendered'] : '';
+			$x['content'] = ( isset( $a['content']['rendered'] ) ) ? $a['content']['rendered'] : '';
+			$x['date'] = ( isset( $a['date'] ) ) ? $a['date'] : '';
+			$post_entries[] = $x;
+		}
+
+		foreach ( $post_entries as $a ) {
+			echo '<div>';
+			echo '<p style="font-weight:600">(' . $a['id'] . ') ' . $a['title'] . '</p>';
+			echo '<p>' . $a['content']  . '</p>';
+			echo '<p>' . $a['date'] . '</p>';
+			echo '</div>';
+		}
 
 	}
 
