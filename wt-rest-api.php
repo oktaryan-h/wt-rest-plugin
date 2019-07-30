@@ -14,8 +14,45 @@
  */
 class WT_REST_API {
 
-	function wt_authorization( $user, $pass ) {
-		return array( 'Authorization' => 'Basic ' . base64_encode( $user . ':' . $pass ) );
+	function wt_remote_post_args( $data ) {
+
+		return array(
+			'timeout' => 45,
+			'redirection' => 5,
+			'httpversion' => '1.0',
+			'blocking' => true,
+			'headers' => array( 'Authorization' => 'Basic ' . base64_encode( 'user:1234' ) ),
+			'body' => $data,
+			'cookies' => array()
+		);
+
+	}
+
+	function wt_remote_get_args() {
+
+		return array(
+			'timeout' => 45,
+			'redirection' => 5,
+			'httpversion' => '1.0',
+			'blocking' => true,
+			'headers' => array( 'Authorization' => 'Basic ' . base64_encode( 'user:1234' ) ),
+			'cookies' => array()
+		);
+
+	}
+
+	function wt_remote_custom_args( $method ) {
+
+		return array(
+			'method' => $method,
+			'timeout' => 45,
+			'redirection' => 5,
+			'httpversion' => '1.0',
+			'blocking' => true,
+			'headers' => array( 'Authorization' => 'Basic ' . base64_encode( 'user:1234' ) ),
+			'cookies' => array()
+		);
+
 	}
 
 	/**
@@ -28,15 +65,7 @@ class WT_REST_API {
 
 		$response = wp_remote_post( 
 			$url,
-			array(
-				'timeout' => 45,
-				'redirection' => 5,
-				'httpversion' => '1.0',
-				'blocking' => true,
-				'headers' => $this->wt_authorization( 'user', '1234'),
-				'body' => $data,
-				'cookies' => array()
-			)
+			$this->wt_remote_post_args( $data )
 		);
 
 		if ( is_wp_error( $response ) ) {
@@ -58,16 +87,7 @@ class WT_REST_API {
 
 		$response = wp_remote_post( 
 			$url,
-			array(
-				'method' => 'POST',
-				'timeout' => 45,
-				'redirection' => 5,
-				'httpversion' => '1.0',
-				'blocking' => true,
-				'headers' => $this->wt_authorization( 'user', '1234'),
-				'body' => $data,
-				'cookies' => array()
-			)
+			$this->wt_remote_post_args( $data )
 		);
 
 		if ( is_wp_error( $response ) ) {
@@ -96,15 +116,7 @@ class WT_REST_API {
 
 		$response = wp_remote_request( 
 			$url,
-			array(
-				'method' => 'DELETE',
-				'timeout' => 45,
-				'redirection' => 5,
-				'httpversion' => '1.0',
-				'blocking' => true,
-				'headers' => $this->wt_authorization( 'user', '1234'),
-				'cookies' => array()
-			)
+			$this->wt_remote_custom_args( 'DELETE' )
 		);
 
 		if ( is_wp_error( $response ) ) {
@@ -134,14 +146,7 @@ class WT_REST_API {
 
 		$response = wp_remote_get( 
 			$url,
-			array(
-				'timeout' => 45,
-				'redirection' => 5,
-				'httpversion' => '1.0',
-				'blocking' => true,
-				'headers' => $this->wt_authorization( 'user', '1234'),
-				'cookies' => array()
-			)
+			$this->wt_remote_get_args()
 		);
 
 		$source = wp_remote_retrieve_body( $response );
@@ -256,14 +261,7 @@ class WT_REST_API {
 
 		$response = wp_remote_get( 
 			$url,
-			array(
-				'timeout' => 45,
-				'redirection' => 5,
-				'httpversion' => '1.0',
-				'blocking' => true,
-				'headers' => $this->wt_authorization( 'user', '1234'),
-				'cookies' => array()
-			)
+			$this->wt_remote_get_args()
 		);
 
 		$source = wp_remote_retrieve_body( $response );
