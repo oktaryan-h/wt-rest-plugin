@@ -14,44 +14,43 @@
  */
 class WT_REST_API {
 
-	function wt_remote_post_args( $data ) {
+	function _wt_remote_args( $method = 'GET', $data = array() ) {
 
-		return array(
+		$args = array(
 			'timeout' => 45,
 			'redirection' => 5,
 			'httpversion' => '1.0',
 			'blocking' => true,
 			'headers' => array( 'Authorization' => 'Basic ' . base64_encode( 'user:1234' ) ),
-			'body' => $data,
 			'cookies' => array()
 		);
+
+		if ( 'POST' == $method ) {
+			$args['body'] = $data;
+		}
+		else if ( 'DELETE' == $method ) {
+			$args['method'] = 'DELETE';
+		}
+
+		return $args;
+
+	}
+
+	function wt_remote_post_args( $data ) {
+
+		return $this->_wt_remote_args( 'POST', $data );
 
 	}
 
 	function wt_remote_get_args() {
 
-		return array(
-			'timeout' => 45,
-			'redirection' => 5,
-			'httpversion' => '1.0',
-			'blocking' => true,
-			'headers' => array( 'Authorization' => 'Basic ' . base64_encode( 'user:1234' ) ),
-			'cookies' => array()
-		);
+		return $this->_wt_remote_args();
 
 	}
 
 	function wt_remote_custom_args( $method ) {
 
-		return array(
-			'method' => $method,
-			'timeout' => 45,
-			'redirection' => 5,
-			'httpversion' => '1.0',
-			'blocking' => true,
-			'headers' => array( 'Authorization' => 'Basic ' . base64_encode( 'user:1234' ) ),
-			'cookies' => array()
-		);
+		return $this->_wt_remote_args( $method );
 
 	}
 
@@ -340,7 +339,6 @@ class WT_REST_API {
 
 		return ob_get_clean();
 	}
-
 
 }
 
