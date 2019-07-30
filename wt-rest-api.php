@@ -14,6 +14,10 @@
  */
 class WT_REST_API {
 
+	function wt_authorization( $user, $pass ) {
+		return array( 'Authorization' => 'Basic ' . base64_encode( $user . ':' . $pass ) );
+	}
+
 	/**
 	 * [create description]
 	 * @return [type] [description]
@@ -29,7 +33,7 @@ class WT_REST_API {
 				'redirection' => 5,
 				'httpversion' => '1.0',
 				'blocking' => true,
-				'headers' => array( 'Authorization' => 'Basic ' . base64_encode( 'user:1234' ) ),
+				'headers' => $this->wt_authorization( 'user', '1234'),
 				'body' => $data,
 				'cookies' => array()
 			)
@@ -60,7 +64,7 @@ class WT_REST_API {
 				'redirection' => 5,
 				'httpversion' => '1.0',
 				'blocking' => true,
-				'headers' => array( 'Authorization' => 'Basic ' . base64_encode( 'user:1234' ) ),
+				'headers' => $this->wt_authorization( 'user', '1234'),
 				'body' => $data,
 				'cookies' => array()
 			)
@@ -98,7 +102,7 @@ class WT_REST_API {
 				'redirection' => 5,
 				'httpversion' => '1.0',
 				'blocking' => true,
-				'headers' => array( 'Authorization' => 'Basic ' . base64_encode( 'user:1234' ) ),
+				'headers' => $this->wt_authorization( 'user', '1234'),
 				'cookies' => array()
 			)
 		);
@@ -135,7 +139,7 @@ class WT_REST_API {
 				'redirection' => 5,
 				'httpversion' => '1.0',
 				'blocking' => true,
-				'headers' => array( 'Authorization' => 'Basic ' . base64_encode( 'user:1234' ) ),
+				'headers' => $this->wt_authorization( 'user', '1234'),
 				'cookies' => array()
 			)
 		);
@@ -257,7 +261,7 @@ class WT_REST_API {
 				'redirection' => 5,
 				'httpversion' => '1.0',
 				'blocking' => true,
-				'headers' => array( 'Authorization' => 'Basic ' . base64_encode( 'user:1234' ) ),
+				'headers' => $this->wt_authorization( 'user', '1234'),
 				'cookies' => array()
 			)
 		);
