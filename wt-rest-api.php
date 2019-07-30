@@ -79,6 +79,15 @@ class WT_REST_API {
 	 */
 	function delete( $post_id ) {
 
+		if ( 
+			! isset( $_GET['_wpnonce'] ) 
+			|| ! wp_verify_nonce( $_GET['_wpnonce'], 'delete_' . $post_id ) 
+		) {
+
+			echo 'Sorry, your nonce did not verify.';
+			return;
+		}
+
 		$url = get_rest_url() . "wp/v2/posts/{$post_id}";
 
 		$response = wp_remote_request( 
@@ -147,12 +156,16 @@ class WT_REST_API {
 		}
 
 		foreach ( $post_entries as $a ) {
+
+			$post_entry_link = add_query_arg( array( 'delete_post' => $a['id'] ), get_permalink() );
+			$nonced_delete_link = wp_nonce_url( $post_entry_link, 'delete_' . $a['id'] );
+
 			echo '<div>';
 			echo '<p style="font-weight:600">(' . $a['id'] . ') ' . $a['title'] . '</p>';
 			echo '<p>' . $a['content']  . '</p>';
 			echo '<p>' . $a['date'] . '</p>';
 			echo '<p><a href="' . add_query_arg( array( 'post_id' => $a['id'] ), network_site_url() . 'rest-edit/' ) . '">Edit</a></p>';
-			echo '<p><a href="' . add_query_arg( array( 'delete_post' => $a['id'] ), get_permalink() ) . '">Delete</a></p>';
+			echo '<p><a href="' . $nonced_delete_link . '">Delete</a></p>';
 			echo '</div>';
 		}
 
@@ -161,6 +174,16 @@ class WT_REST_API {
 	function html_create_form() {
 
 		if ( isset( $_POST['submit'] ) ) {
+
+			if ( 
+				! isset( $_POST['nonce-create'] ) 
+				|| ! wp_verify_nonce( $_POST['nonce-create'], 'check-create' ) 
+			) {
+
+				echo 'Sorry, your nonce did not verify.';
+				return;
+			}
+
 			$data = array(
 				'title' => ( isset( $_POST['title'] ) ) ? sanitize_text_field( $_POST['title'] ) : '' ,
 				'content' => ( isset( $_POST['content'] ) ) ? sanitize_text_field( $_POST['content'] ) : '' ,
@@ -172,6 +195,7 @@ class WT_REST_API {
 		?>
 
 		<form action="" method="POST">
+			<?php wp_nonce_field( 'check-create', 'nonce-create' ) ?>
 			<p>
 				Title :
 				<input type="text" name="title" value="">
@@ -206,10 +230,20 @@ class WT_REST_API {
 		}
 
 		if ( isset( $_POST['submit'] ) ) {
+
+			if ( 
+				! isset( $_POST['nonce-edit'] ) 
+				|| ! wp_verify_nonce( $_POST['nonce-edit'], 'check-edit' ) 
+			) {
+
+				echo 'Sorry, your nonce did not verify.';
+				return;
+			}
+
 			$data = array(
-			 'title' => ( isset( $_POST['title'] ) ) ? sanitize_text_field( $_POST['title'] ) : '' ,
-			 'content' => ( isset( $_POST['content'] ) ) ? sanitize_text_field( $_POST['content'] ) : '' ,
-			 'status' => ( isset( $_POST['status'] ) ) ? sanitize_text_field( $_POST['status'] ) : '' ,
+				'title' => ( isset( $_POST['title'] ) ) ? sanitize_text_field( $_POST['title'] ) : '' ,
+				'content' => ( isset( $_POST['content'] ) ) ? sanitize_text_field( $_POST['content'] ) : '' ,
+				'status' => ( isset( $_POST['status'] ) ) ? sanitize_text_field( $_POST['status'] ) : '' ,
 			);
 			$this->update( $post_id, $data );
 		}
@@ -232,14 +266,15 @@ class WT_REST_API {
 
 		$json_decoded = json_decode( $source, true );
 
-			$a = $json_decoded;
-			$x['id'] = ( isset( $a['id'] ) ) ? $a['id'] : '';
-			$x['title'] = ( isset( $a['title']['rendered'] ) ) ? $a['title']['rendered'] : '';
-			$x['content'] = ( isset( $a['content']['rendered'] ) ) ? $a['content']['rendered'] : '';
-			$x['status'] = ( isset( $a['status'] ) ) ? $a['status'] : '';
+		$a = $json_decoded;
+		$x['id'] = ( isset( $a['id'] ) ) ? $a['id'] : '';
+		$x['title'] = ( isset( $a['title']['rendered'] ) ) ? $a['title']['rendered'] : '';
+		$x['content'] = ( isset( $a['content']['rendered'] ) ) ? $a['content']['rendered'] : '';
+		$x['status'] = ( isset( $a['status'] ) ) ? $a['status'] : '';
 		?>
 
 		<form action="<?php echo add_query_arg( array( 'post_id' => $x['id'] ), the_permalink() ) ?>" method="POST">
+			<?php wp_nonce_field( 'check-edit', 'nonce-edit' ) ?>
 			<p>
 				Title :
 				<input type="text" name="title" value="<?php echo ( isset( $x['title'] ) ) ? $x['title'] : ''; ?>">
