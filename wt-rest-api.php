@@ -20,9 +20,7 @@ class WT_REST_API {
 	 */
 	function create() {
 
-		$url = get_rest_url() . "wp/v2/posts/";
-
-		echo get_res_url();
+		$url = get_rest_url() . 'wp/v2/posts/';
 
 		$response = wp_remote_post( 
 			$url,
@@ -44,10 +42,6 @@ class WT_REST_API {
 		if ( is_wp_error( $response ) ) {
 			$error_message = $response->get_error_message();
 			echo "Something went wrong: $error_message";
-		} else {
-			echo 'Response:<pre>';
-			print_r( $response );
-			echo '</pre>';
 		}
 
 	}
@@ -79,10 +73,6 @@ class WT_REST_API {
 		if ( is_wp_error( $response ) ) {
 			$error_message = $response->get_error_message();
 			echo "Something went wrong: $error_message";
-		} else {
-			echo 'Response:<pre>';
-			print_r( $response );
-			echo '</pre>';
 		}
 	}
 
@@ -95,10 +85,10 @@ class WT_REST_API {
 
 		$url = get_rest_url() . "wp/v2/posts/{$post_id}";
 
-		$response = wp_remote_post( 
+		$response = wp_remote_request( 
 			$url,
 			array(
-				'method' => 'POST',
+				'method' => 'DELETE',
 				'timeout' => 45,
 				'redirection' => 5,
 				'httpversion' => '1.0',
@@ -111,10 +101,6 @@ class WT_REST_API {
 		if ( is_wp_error( $response ) ) {
 			$error_message = $response->get_error_message();
 			echo "Something went wrong: $error_message";
-		} else {
-			echo 'Response:<pre>';
-			print_r( $response );
-			echo '</pre>';
 		}
 	}
 
@@ -124,8 +110,6 @@ class WT_REST_API {
 	 * @return [type]       [description]
 	 */
 	public function html_show_posts( $atts ) {
-
-		//echo get_rest_url();
 
 		$attributes = shortcode_atts( 
 			array( 'posts' => 1 ),
@@ -137,7 +121,19 @@ class WT_REST_API {
 			$posts = $attributes['posts'];
 		}
 
-		$response = wp_remote_get( get_rest_url()."wp/v2/posts/?page=1&per_page={$posts}", array( '' ) );
+		$url = get_rest_url()."wp/v2/posts/?page=1&per_page={$posts}";
+
+		$response = wp_remote_get( 
+			$url,
+			array(
+				'timeout' => 45,
+				'redirection' => 5,
+				'httpversion' => '1.0',
+				'blocking' => true,
+				'headers' => array( 'Authorization' => 'Basic ' . base64_encode( 'user:1234' ) ),
+				'cookies' => array()
+			)
+		);
 
 		$source = wp_remote_retrieve_body( $response );
 
@@ -159,8 +155,78 @@ class WT_REST_API {
 			echo '<p style="font-weight:600">(' . $a['id'] . ') ' . $a['title'] . '</p>';
 			echo '<p>' . $a['content']  . '</p>';
 			echo '<p>' . $a['date'] . '</p>';
+			echo '<p><a href="' . add_query_arg( array( 'post_id' => $a['id'] ), network_site_url() . 'rest-edit/' ) . '">Edit</a></p>';
+			echo '<p><a href="' . add_query_arg( array( 'delete_post' => $a['id'] ), get_permalink() ) . '">Delete</a></p>';
 			echo '</div>';
 		}
+
+	}
+
+	function html_edit_form() {
+
+		$post_id = ( isset( $_GET['post_id'] ) ) ? $_GET['post_id'] : 0 ;
+
+		if ( 0 == $post_id ) {
+			echo 'No post id defined';
+			return;
+		}
+
+		if ( isset( $_POST['submit'] ) ) {
+			$data = array(
+			 'title' => ( isset( $_POST['title'] ) ) ? sanitize_text_field( $_POST['title'] ) : '' ,
+			 'content' => ( isset( $_POST['content'] ) ) ? sanitize_text_field( $_POST['content'] ) : '' ,
+			 'status' => ( isset( $_POST['status'] ) ) ? sanitize_text_field( $_POST['status'] ) : '' ,
+			);
+			$this->update( $post_id, $data );
+		}
+
+		$url = get_rest_url()."wp/v2/posts/{$post_id}";
+
+		$response = wp_remote_get( 
+			$url,
+			array(
+				'timeout' => 45,
+				'redirection' => 5,
+				'httpversion' => '1.0',
+				'blocking' => true,
+				'headers' => array( 'Authorization' => 'Basic ' . base64_encode( 'user:1234' ) ),
+				'cookies' => array()
+			)
+		);
+
+		$source = wp_remote_retrieve_body( $response );
+
+		$json_decoded = json_decode( $source, true );
+
+			$a = $json_decoded;
+			$x['id'] = ( isset( $a['id'] ) ) ? $a['id'] : '';
+			$x['title'] = ( isset( $a['title']['rendered'] ) ) ? $a['title']['rendered'] : '';
+			$x['content'] = ( isset( $a['content']['rendered'] ) ) ? $a['content']['rendered'] : '';
+			$x['status'] = ( isset( $a['status'] ) ) ? $a['status'] : '';
+		?>
+
+		<form action="<?php echo add_query_arg( array( 'post_id' => $x['id'] ), the_permalink() ) ?>" method="POST">
+			<p>
+				Title :
+				<input type="text" name="title" value="<?php echo ( isset( $x['title'] ) ) ? $x['title'] : ''; ?>">
+			</p>
+			<p>
+				Content :
+				<input type="textarea" name="content" value="<?php echo ( isset( $x['content'] ) ) ? $x['content'] : ''; ?>">
+			</p>
+			<p>
+				Publish :
+				<select name="status">
+					<option value="publish" <?php echo ( isset( $x['status'] ) && $x['status'] == 'publish' ) ? 'selected' : ''; ?>>Publish</option>
+					<option value="draft" <?php echo ( isset( $x['status'] ) && $x['status'] == 'draft' ) ? 'selected' : ''; ?>>Draft</option>
+				</select>
+			</p>
+			<p>
+				<input type="submit" name="submit" value="Submit">
+			</p>
+		</form>
+
+		<?php
 
 	}
 
@@ -170,6 +236,10 @@ class WT_REST_API {
 	 * @return [type]       [description]
 	 */
 	function shortcode( $atts ) {
+
+		if ( isset( $_GET['delete_post'] ) ) {
+			$this->delete( sanitize_text_field( $_GET['delete_post'] ) );
+		}
 
 		ob_start();
 
@@ -181,8 +251,18 @@ class WT_REST_API {
 
 		return ob_get_clean();
 	}
+
+		function edit_form() {
+
+		ob_start();
+
+		$this->html_edit_form();
+
+		return ob_get_clean();
+	}
 }
 
 $wt_rest = new WT_REST_API;
 
 add_shortcode( 'rest-full', array( $wt_rest, 'shortcode' ) );
+add_shortcode( 'rest-edit', array( $wt_rest, 'edit_form' ) );
