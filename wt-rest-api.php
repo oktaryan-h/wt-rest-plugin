@@ -141,7 +141,13 @@ class WT_REST_API {
 			$posts = $attributes['posts'];
 		}
 
-		$url = get_rest_url()."wp/v2/posts/?page=1&per_page={$posts}";
+		if( is_front_page() OR is_single() ) {
+			$paged = ( get_query_var('page') ) ? get_query_var('page') : 1;
+		}else {
+			$paged = ( get_query_var('paged') ) ? get_query_var('paged') : 1;
+		}
+
+		$url = get_rest_url()."wp/v2/posts/?page={$paged}&per_page={$posts}";
 
 		$response = wp_remote_get( 
 			$url,
@@ -149,6 +155,7 @@ class WT_REST_API {
 		);
 
 		$source = wp_remote_retrieve_body( $response );
+		$total_pages = wp_remote_retrieve_header( $response, 'X-WP-TotalPages' );
 
 		$json_decoded = json_decode( $source, true );
 
@@ -176,6 +183,24 @@ class WT_REST_API {
 			echo '<p><a href="' . $nonced_delete_link . '">Delete</a></p>';
 			echo '</div>';
 		}
+
+		if ( is_single() ) {
+			$base = get_permalink().'%#%/';
+		}
+		else {
+			$big = 6950;
+			$base = str_replace( $big, '%#%', esc_url( get_pagenum_link( $big ) ) );
+		}
+
+		echo paginate_links( array(
+			'base' => $base,
+			'format' => '?paged=%#%',
+			'current' => max( 1, $paged ),
+			'total' => $total_pages,
+			'prev_text' => __( '<< Calm Down' ),
+			'next_text' => __( 'Go Loud >>' ),
+				// 'add_args' => 'input-text=' . $input_text,
+		) );
 
 	}
 
