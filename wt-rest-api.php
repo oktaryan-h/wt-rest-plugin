@@ -18,7 +18,7 @@ class WT_REST_API {
 	 * [create description]
 	 * @return [type] [description]
 	 */
-	function create() {
+	function create($data) {
 
 		$url = get_rest_url() . 'wp/v2/posts/';
 
@@ -30,11 +30,7 @@ class WT_REST_API {
 				'httpversion' => '1.0',
 				'blocking' => true,
 				'headers' => array( 'Authorization' => 'Basic ' . base64_encode( 'user:1234' ) ),
-				'body' => array(
-					'title' => 'The Title from REST',
-					'content' => 'The content',
-					'status' => 'publish',
-				),
+				'body' => $data,
 				'cookies' => array()
 			)
 		);
@@ -162,6 +158,44 @@ class WT_REST_API {
 
 	}
 
+	function html_create_form() {
+
+		if ( isset( $_POST['submit'] ) ) {
+			$data = array(
+				'title' => ( isset( $_POST['title'] ) ) ? sanitize_text_field( $_POST['title'] ) : '' ,
+				'content' => ( isset( $_POST['content'] ) ) ? sanitize_text_field( $_POST['content'] ) : '' ,
+				'status' => ( isset( $_POST['status'] ) ) ? sanitize_text_field( $_POST['status'] ) : '' ,
+			);
+			$this->create( $data );
+		}
+
+		?>
+
+		<form action="" method="POST">
+			<p>
+				Title :
+				<input type="text" name="title" value="">
+			</p>
+			<p>
+				Content :
+				<input type="textarea" name="content" value="">
+			</p>
+			<p>
+				Publish :
+				<select name="status">
+					<option value="publish" selected>Publish</option>
+					<option value="draft">Draft</option>
+				</select>
+			</p>
+			<p>
+				<input type="submit" name="submit" value="Submit">
+			</p>
+		</form>
+
+		<?php
+
+	}
+
 	function html_edit_form() {
 
 		$post_id = ( isset( $_GET['post_id'] ) ) ? $_GET['post_id'] : 0 ;
@@ -252,7 +286,16 @@ class WT_REST_API {
 		return ob_get_clean();
 	}
 
-		function edit_form() {
+	function create_form() {
+
+		ob_start();
+
+		$this->html_create_form();
+
+		return ob_get_clean();
+	}
+
+	function edit_form() {
 
 		ob_start();
 
@@ -260,9 +303,12 @@ class WT_REST_API {
 
 		return ob_get_clean();
 	}
+
+
 }
 
 $wt_rest = new WT_REST_API;
 
 add_shortcode( 'rest-full', array( $wt_rest, 'shortcode' ) );
+add_shortcode( 'rest-create', array( $wt_rest, 'create_form' ) );
 add_shortcode( 'rest-edit', array( $wt_rest, 'edit_form' ) );
